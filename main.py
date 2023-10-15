@@ -33,6 +33,14 @@ def threshold_via_std(image: np.array, n_std: int):
     return droplet_integer_mask
 
 
+def threshold_via_otsu(image: np.array):
+    droplet_boolean_mask = image > ski.filters.threshold_otsu(image)
+
+    droplet_integer_mask = droplet_boolean_mask.astype(int)
+
+    return droplet_integer_mask
+
+
 def process_threshold(image: numpy.array):
     filled_holes = ski.morphology.closing(image, ski.morphology.square(3))
 
@@ -41,7 +49,12 @@ def process_threshold(image: numpy.array):
 
 def process_image(image_path: Path, method: str = "STD"):
     image = load_img(image_path)
-    thresholded_img = threshold_via_std(image, 2)
+
+    if method == "STD":
+        thresholded_img = threshold_via_std(image, 2)
+
+    elif method == "OTSU":
+        thresholded_img = threshold_via_otsu(image)
 
     processed = process_threshold(thresholded_img)
 
@@ -61,10 +74,18 @@ def display(image: np.array):
     plt.show()
 
 
+def get_condensed_fraction(image: np.array):
+    return np.sum(image == 1) / image.size
+
+
 def main():
-    image = Path("data/good_condensates.tif")
-    processed = process_image(image)
-    display(processed)
+    image = Path("data/small_condensates.tif")
+    std_processed = process_image(image, "STD")
+    otsu_processed = process_image(image, "OTSU")
+    print(f"STD: {get_condensed_fraction(std_processed)}\n OTSU: {get_condensed_fraction(otsu_processed)}")
+
+    display(std_processed)
+    display(otsu_processed)
 
 
 if __name__ == "__main__":
