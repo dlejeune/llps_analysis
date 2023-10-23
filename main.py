@@ -5,6 +5,7 @@ import skimage as ski
 from pathlib import Path
 import typer
 import matplotlib.pyplot as plt
+from rich.progress import track
 
 
 def load_img(file_path: Path, gray: bool = True):
@@ -88,9 +89,14 @@ def threshold_image(image: np.array, method: str = "STD", n_std: int = 2, square
     return processed
 
 
-def get_image_regions(image: np.array):
-    labelled_image = ski.measure.label(image)
-    region_props = ski.measure.regionprops(labelled_image, image)
+def get_image_regions(image: np.array, original_image: np.array = None):
+    cleared_image = ski.segmentation.clear_border(image)
+    labelled_image = ski.measure.label(cleared_image)
+
+    if original_image is not None:
+        region_props = ski.measure.regionprops(labelled_image, original_image)
+    else:
+        region_props = ski.measure.regionprops(labelled_image, image)
 
     return region_props
 
@@ -113,13 +119,18 @@ def process_image(image: Path, method: str = "STD", square_size: int = 3, metada
     condensed_fraction.extend(metadata)
 
     regions = []
-    image_regions = get_image_regions(thresholded_image)
+    image_regions = get_image_regions(thresholded_image, image)
+
+    image_overlay = ski.color.label2rgb(thresholded_image, image, alpha=0.5, bg_label=0, bg_color=None,
+                                        colors=[(1, 0, 0)])
 
     for prop in image_regions:
         temp = []
         temp.append(prop.area)
         temp.append(prop.mean_intensity)
         temp.append(prop.perimeter)
+        temp.append(prop.axis_major_length)
+        temp.append(prop.axis_minor_length)
         temp.extend(metadata)
         regions.append(temp)
 
@@ -131,7 +142,7 @@ def process_dir(directory: Path, method: str = "STD", square_size: int = 3, meta
     condensed_fractions = []
 
     for sub_directory in directory.glob("*"):
-        for image in sub_directory.glob("*.tif"):
+        for image in track(sub_directory.glob("*.tif")):
             new_metadata = metadata.copy()
             new_metadata.append(sub_directory.stem)
             new_metadata.append(image.stem)
@@ -143,11 +154,22 @@ def process_dir(directory: Path, method: str = "STD", square_size: int = 3, meta
     return condensed_fractions, regions
 
 
-def main(directory: str, output_dir: str = "data", method: str = "STD", metadata: list = []):
+def main(directory: str, output_dir: str = "data", method: str = "OTSU", metadata: str = ""):
+    metadata = metadata.split(",")
     image = Path(directory)
     condensed_fractions, regions = process_dir(image, method=method, metadata=metadata)
 
-    region_df = pd.DataFrame(regions, columns=["area", "mean_intensity", "perimeter", "prep", "dir_name", "image_name"])
+    region_columns = ["area",
+                      "mean_intensity",
+                      "perimeter",
+                      "axis_major_length",
+                      "axis_minor_length",
+                      "prep",
+                      "dir_name",
+                      "image_name"]
+
+    region_df = pd.DataFrame(regions,
+                             columns=region_columns)
     condensed_fraction_df = pd.DataFrame(condensed_fractions,
                                          columns=["condensed_fraction", "prep", "dir_name", "image_name"])
 

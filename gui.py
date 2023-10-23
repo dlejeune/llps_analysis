@@ -20,7 +20,7 @@ while True:  # Event Loop
         break
     if event == 'Process':
         window.perform_long_operation(lambda: main(values["INPUT-FOLDER-DISPLAY"], values["OUPUT-FOLDER-DISPLAY"],
-                                                   metadata=[values["METADATA"], ],
+                                                   metadata=values["METADATA"],
                                                    method=values["METHOD"]), "FUNCTION_COMPLETED")
 
     if event == "FUNCTION_COMPLETED":
