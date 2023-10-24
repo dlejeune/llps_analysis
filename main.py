@@ -137,7 +137,7 @@ def process_image(image: Path, method: str = "STD", square_size: int = 3, metada
     return condensed_fraction, regions
 
 
-def process_dir(directory: Path, method: str = "STD", square_size: int = 3, metadata: list = []):
+def process_dir(directory: Path, method: str = "STD", square_size: int = 3, metadata: list = [], threads=1):
     regions = []
     condensed_fractions = []
 
