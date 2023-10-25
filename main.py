@@ -174,8 +174,8 @@ def main(directory: str, output_dir: str = "data", method: str = "OTSU", metadat
                                          columns=["condensed_fraction", "prep", "dir_name", "image_name"])
 
     output_dir = Path(output_dir)
-    region_df.to_csv(output_dir / "regions.csv", index=False)
-    condensed_fraction_df.to_csv(output_dir / "condensed_fractions.csv", index=False)
+    region_df.to_csv(output_dir / f"{metadata[0]}_regions.csv", index=False)
+    condensed_fraction_df.to_csv(output_dir / f"{metadata[0]}_condensed_fractions.csv", index=False)
 
 
 if __name__ == "__main__":
