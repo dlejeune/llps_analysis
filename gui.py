@@ -9,6 +9,8 @@ layout = [
     [sg.Text('Output Folder'), sg.InputText(key="OUPUT-FOLDER-DISPLAY"), sg.FolderBrowse(key="OUTPUT-FOLDER-BROWSE")],
     [sg.Text('Protein Name'), sg.InputText(key="METADATA")],
     [sg.Text('Method'), sg.Combo(key="METHOD", values=["STD", "OTSU"])],
+    [sg.Checkbox("Debug", key="DEBUG", default=False)],
+
     [sg.Button('Process'), sg.Button('Exit')]]
 
 window = sg.Window('LLPS Analysis', layout)
@@ -19,9 +21,12 @@ while True:  # Event Loop
     if event == sg.WIN_CLOSED or event == 'Exit':
         break
     if event == 'Process':
-        window.perform_long_operation(lambda: main(values["INPUT-FOLDER-DISPLAY"], values["OUPUT-FOLDER-DISPLAY"],
+        window.perform_long_operation(lambda: main("dir",
+                                                   directory=values["INPUT-FOLDER-DISPLAY"],
+                                                   output_dir=values["OUPUT-FOLDER-DISPLAY"],
                                                    metadata=values["METADATA"],
-                                                   method=values["METHOD"]), "FUNCTION_COMPLETED")
+                                                   method=values["METHOD"],
+                                                   debug=bool(values["DEBUG"])), "FUNCTION_COMPLETED")
 
     if event == "FUNCTION_COMPLETED":
         sg.popup("Done!")
