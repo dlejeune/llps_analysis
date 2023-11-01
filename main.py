@@ -108,6 +108,7 @@ def preprocess_image(image: np.array, steps: list):
 
 
 def threshold_image(image: np.array, method: str = "STD", n_std: int = 2, square_size: int = 3):
+    logging.debug("Thresholding the image")
     if method == "STD":
         thresholded_img = threshold_via_std(image, n_std)
 
@@ -121,6 +122,7 @@ def threshold_image(image: np.array, method: str = "STD", n_std: int = 2, square
         thresholded_img = threshold_via_isodata(image)
 
     processed = process_threshold(thresholded_img, square_size)
+    logging.debug("Thresholding complete")
 
     return processed
 
@@ -146,8 +148,12 @@ def get_condensed_fraction(image: np.array):
     return np.sum(image == 1) / image.size
 
 
+def calc_mean_entropy(image):
+    return np.mean(ski.filters.rank.entropy(image.astype("uint8"), ski.morphology.disk(3)))
+
+
 def process_image(image: Path, output_dir: Path, method: str = "STD", square_size: int = 3, metadata: list = [],
-                  debug=False):
+                  debug=False, cv_thresh=0):
     img_name = image.stem
     image = load_img(image)
 
@@ -158,17 +164,34 @@ def process_image(image: Path, output_dir: Path, method: str = "STD", square_siz
 
     # Hardcoded, naughty
     logging.debug(f"Image CV: {img_cv}")
-    if img_cv < 0.2:
+    if img_cv < cv_thresh:
         logging.debug("Coeff of Variance < 0.1, skipping")
         img_cf = 0
         image_regions = []
 
     else:
 
-        processed_img = preprocess_image(image, ["adapt_hist", "richardson" "closing"])
+        processed_img = preprocess_image(image, [])
         thresholded_image = threshold_image(processed_img, method, square_size=square_size)
+
+        entropy_thresh = 0.07
+        multiplier = 2
+
+        while calc_mean_entropy(thresholded_image) > entropy_thresh:
+            logging.debug(f"Entropy too high, increasing threshold by {multiplier}")
+            thresholded_image = processed_img > multiplier * np.std(processed_img)
+            multiplier += 1
+
+        logging.debug(f"Post thresholding complete")
+
         img_cf = get_condensed_fraction(thresholded_image)
+
         image_regions = get_image_regions(thresholded_image, image)
+
+        if ski.measure.label(thresholded_image) <= 10:
+            logging.debug("Too few regions, setting CF to 0")
+            img_cf = 0
+            image_regions = []
 
         for prop in image_regions:
             temp = []
@@ -186,7 +209,7 @@ def process_image(image: Path, output_dir: Path, method: str = "STD", square_siz
             fig, region_image = draw_regions_on_image(image, thresholded_image, image_regions)
             fig.savefig(intermediate_folder / f"{img_name}_regions.png")
 
-    condensed_fraction = [img_cf, np.mean(image), np.std(image), np.max(image), np.min(image)]
+    condensed_fraction = [img_cf, np.mean(image), np.std(image), np.max(image), np.min(image), calc_mean_entropy(image)]
     condensed_fraction.extend(metadata)
 
     return condensed_fraction, regions
@@ -227,6 +250,7 @@ def process_dir(directory: Path, output_dir: Path, method: str = "STD", metadata
         "std_intensity",
         "max_intensity",
         "min_intensity",
+        "mean_entropy",
         "prep",
         "dir_name",
         "image_name"
@@ -249,19 +273,19 @@ def compute_and_draw_regions_on_image(image, threshold):
 
 
 def draw_regions_on_image(image, thresholded_image, regions):
-    image_overlay = ski.color.label2rgb(thresholded_image, image, alpha=0.5, bg_label=0, bg_color=None,
-                                        colors=[(1, 0, 0)])
+    labels = ski.measure.label(thresholded_image)
+    image_overlay = ski.color.label2rgb(labels, image=image, alpha=0.5, bg_label=0)
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.imshow(image)
+    ax.imshow(image_overlay)
 
-    for region in regions:
-        # take regions with large enough areas
-        # draw rectangle around segmented coins
-        minr, minc, maxr, maxc = region.bbox
-        rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
-                                  fill=False, edgecolor='red', linewidth=2)
-        ax.add_patch(rect)
+    # for region in regions:
+    #     # take regions with large enough areas
+    #     # draw rectangle around segmented coins
+    #     minr, minc, maxr, maxc = region.bbox
+    #     rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
+    #                               fill=False, edgecolor='red', linewidth=2)
+    #     ax.add_patch(rect)
 
     return fig, ax
 
