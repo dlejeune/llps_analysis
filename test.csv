@@ -1,0 +1,21 @@
+Day ,Type,Desc,Value
+1,T,TN,0
+1,T,TA,0
+1,U,UN,1
+1,U,UA,0
+2,T,TN,1
+2,T,TA,0
+2,U,UN,1
+2,U,UA,0
+3,T,TN,1
+3,T,TA,0
+3,U,UN,1
+3,U,UA,0
+4,T,TN,1
+4,T,TA,0
+4,U,UN,1
+4,U,UA,0
+7,T,TN,0.67
+7,T,TA,0.33
+7,U,UN,0.33
+7,U,UA,0.67
