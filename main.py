@@ -188,7 +188,10 @@ def process_image(image: Path, output_dir: Path, method: str = "STD", square_siz
 
         image_regions = get_image_regions(thresholded_image, image)
 
-        if ski.measure.label(thresholded_image) <= 10:
+        mean_region_intensities = np.bincount(thresholded_image.astype(int).ravel(), processed_img.ravel()) / \
+                                  np.unique(thresholded_image.astype(int), return_counts=True)[1]
+
+        if len(np.unique(ski.measure.label(thresholded_image))) <= 10:
             logging.debug("Too few regions, setting CF to 0")
             img_cf = 0
             image_regions = []
@@ -209,7 +212,8 @@ def process_image(image: Path, output_dir: Path, method: str = "STD", square_siz
             fig, region_image = draw_regions_on_image(image, thresholded_image, image_regions)
             fig.savefig(intermediate_folder / f"{img_name}_regions.png")
 
-    condensed_fraction = [img_cf, np.mean(image), np.std(image), np.max(image), np.min(image), calc_mean_entropy(image)]
+    condensed_fraction = [img_cf, np.mean(image), np.std(image), np.max(image), np.min(image), calc_mean_entropy(image),
+                          mean_region_intensities[0], mean_region_intensities[1]]
     condensed_fraction.extend(metadata)
 
     return condensed_fraction, regions
@@ -251,6 +255,8 @@ def process_dir(directory: Path, output_dir: Path, method: str = "STD", metadata
         "max_intensity",
         "min_intensity",
         "mean_entropy",
+        "mean_bg_intensity",
+        "mean_fg_intensity",
         "prep",
         "dir_name",
         "image_name"
