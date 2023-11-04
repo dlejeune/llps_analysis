@@ -219,7 +219,8 @@ def process_image(image: Path, output_dir: Path, method: str = "STD", square_siz
     return condensed_fraction, regions
 
 
-def process_dir(directory: Path, output_dir: Path, method: str = "STD", metadata: str = "", threads=1, debug=False):
+def process_dir(directory: Path, output_dir: Path, method: str = "STD", metadata: str = "", threads=1, debug=False,
+                file_matching_pattern=[".tif"]):
     if not output_dir.exists():
         output_dir.mkdir(exist_ok=True, parents=True)
 
@@ -230,7 +231,12 @@ def process_dir(directory: Path, output_dir: Path, method: str = "STD", metadata
 
     for sub_directory in directory.glob("*"):
         logging.debug(f"Processing {sub_directory.stem}")
-        for image in sub_directory.glob("*.tif"):
+        images = []
+
+        for pattern in file_matching_pattern:
+            images.extend(sub_directory.glob(pattern))
+
+        for image in images:
             new_metadata = metadata.copy()
             new_metadata.append(sub_directory.stem)
             new_metadata.append(image.stem)
@@ -280,7 +286,7 @@ def compute_and_draw_regions_on_image(image, threshold):
 
 def draw_regions_on_image(image, thresholded_image, regions):
     labels = ski.measure.label(thresholded_image)
-    image_overlay = ski.color.label2rgb(labels, image=image, alpha=0.5, bg_label=0)
+    image_overlay = ski.color.label2rgb(labels, image=image, alpha=0.5, bg_label=0, colors=[[91, 8, 136]])
 
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.imshow(image_overlay)
@@ -306,11 +312,28 @@ def compute_over_multiple_dirs(parent_dir: str, parent_output_dir: str = "data",
             process_dir(experiment_dir, experiment_output_dir, method=method, metadata=experiment_dir.stem, debug=debug)
 
 
-def main(mode, directory: str, output_dir: str, method: str = "OTSU", metadata: str = "", debug: bool = False):
-    if mode == "dir":
-        process_dir(Path(directory), Path(output_dir), method=method, metadata=metadata, debug=debug)
-    elif mode == "multi":
-        compute_over_multiple_dirs(directory, output_dir, method=method, metadata=metadata, debug=debug)
+def main(directory: str, output_dir: str, method: str = "OTSU", metadata: str = "", debug: bool = False,
+         multichannel: bool = False, channels: str = "BLUE1,RED"):
+    channel_lookup = {
+        "BLUE1": "*Blue1.tif",
+        "BLUE2": "*Blue2.tif",
+        "BLUE3": "*Blue3.tif",
+        "BLUE": "*Blue.tif",
+        "BLUE6": "*Blue6.tif",
+        "RED": "*Red.tif",
+        "GREEN": "*Green.tif",
+        "MERGED": "*RGB.tif"
+    }
+
+    file_extensions = ["*.tif"]
+
+    if multichannel:
+        file_extensions = []
+        for channel in channels.split(","):
+            file_extensions.append(channel_lookup[channel.strip()])
+
+    process_dir(Path(directory), Path(output_dir), method=method, metadata=metadata, debug=debug,
+                file_matching_pattern=file_extensions)
 
 
 if __name__ == "__main__":

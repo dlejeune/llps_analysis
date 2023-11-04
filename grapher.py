@@ -6,6 +6,40 @@ import pandas as pd
 import plotnine as pn
 
 
+def load_df(path, exclude="") -> pd.DataFrame:
+    """Loads the csv file at the path into a dataframe"""
+
+    region_file = list(Path(path).glob("*regions.csv"))[0]
+    fraction_file = list(Path(path).glob("*condensed_fractions.csv"))[0]
+
+    region_df = pd.read_csv(region_file)
+    cf_df = pd.read_csv(fraction_file)
+    cf_df = cf_df[cf_df["dir_name"] != exclude]
+    # cf_df["dir_name"] = cf_df["dir_name"].astype("int")
+
+    cf_df["dir_name"] = pd.Categorical(cf_df["dir_name"], ordered=True,
+                                       categories=sorted(np.unique(cf_df["dir_name"]).tolist()))
+    return cf_df, region_df
+
+
+def graph_boxplot(data, x, y, x_axis, y_axis, legend, point_colour):
+    """Graphs the data in a boxplot"""
+
+    plot = (
+            pn.ggplot(data, pn.aes(x=x, y=y))
+            + pn.geom_boxplot()
+            + pn.geom_jitter(colour=point_colour, alpha=0.75)
+            + pn.theme_classic()
+            + pn.labs(x=x_axis, y=x_axis, color="", fill="",
+                      shape="")
+            + pn.theme(figure_size=(5, 5),
+                       legend_position="top",
+                       axis_text=pn.element_text(color="black", size=10, family="Arial"),
+                       axis_title=pn.element_text(color="black", size=10, family="Arial"))
+    )
+    return plot
+
+
 def fix_concentration(row, stock_concentrations):
     return stock_concentrations[row["prep"]] / row["dir_name"]
 
