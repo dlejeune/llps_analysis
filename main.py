@@ -343,7 +343,7 @@ def compute_over_multiple_dirs(parent_dir: str, parent_output_dir: str = "data",
             process_dir(experiment_dir, experiment_output_dir, method=method, metadata=experiment_dir.stem, debug=debug)
 
 
-def main(directory: str, output_dir: str, method: str = "OTSU", metadata: str = "", debug: bool = False,
+def main(directory: str, output_dir: str, method: str = "STD", metadata: str = "", debug: bool = False,
          multichannel: bool = False, channels: str = "BLUE1,RED", n_std: int = 3, convert_to_eight_bit: bool = True):
     channel_lookup = {
         "BLUE1": "*Blue1.tif",
