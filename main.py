@@ -226,8 +226,13 @@ def process_image(image: Path, output_dir: Path, method: str = "STD", square_siz
     if debug:
         intermediate_folder = output_dir / "intermediate"
         intermediate_folder.mkdir(exist_ok=True, parents=True)
-        fig, region_image = draw_regions_on_image(image, thresholded_image, image_regions)
-        fig.savefig(intermediate_folder / f"{img_name}_regions.png")
+        # fig, region_image = draw_regions_on_image(image, thresholded_image, image_regions)
+        # fig.savefig(intermediate_folder / f"{img_name}_regions.png")
+        # plt.close(fig)
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.imshow(image)
+        fig.savefig(intermediate_folder / f"{img_name}_raw.png")
         plt.close(fig)
 
         fig, ax = plt.subplots(figsize=(10, 6))
