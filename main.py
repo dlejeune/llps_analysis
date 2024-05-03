@@ -9,6 +9,8 @@ from matplotlib import patches as mpatches
 from rich.progress import track
 import logging
 from typing_extensions import Annotated
+from rich import print
+from rich.panel import Panel
 
 
 def load_img(file_path: Path, convert_to_eight_bit: bool = True):
@@ -370,6 +372,8 @@ def main(directory: str, output_dir: str, method: str = "STD", metadata: str = "
 
     process_dir(Path(directory), Path(output_dir), method=method, metadata=metadata, debug=debug,
                 file_matching_pattern=file_extensions, convert_to_eight_bit=convert_to_eight_bit, n_std=n_std)
+
+    print(Panel("[blue]Done!"))
 
 
 if __name__ == "__main__":
