@@ -10,6 +10,7 @@ from rich.progress import track
 import logging
 from typing_extensions import Annotated
 from rich import print
+import plotnine as pn
 from rich.panel import Panel
 
 
@@ -309,6 +310,8 @@ def process_dir(directory: Path, output_dir: Path, method: str = "STD", metadata
     region_df = pd.DataFrame(regions, columns=region_columns)
     condensed_fraction_df = pd.DataFrame(condensed_fractions, columns=cf_columns)
 
+    create_graphs(condensed_fraction_df, output_dir)
+
     region_df.to_csv(output_dir / f"{metadata[0]}_regions.csv", index=False)
     condensed_fraction_df.to_csv(output_dir / f"{metadata[0]}_condensed_fractions.csv", index=False)
 
@@ -338,6 +341,17 @@ def draw_regions_on_image(image, thresholded_image, regions):
         ax.add_patch(rect)
 
     return fig, ax
+
+
+def create_graphs(condensed_fraction_df, output_dir):
+    plot = (
+            pn.ggplot(condensed_fraction_df, pn.aes(x="dir_name", y="condensed_fraction")) +
+            pn.geom_boxplot() +
+            pn.theme_minimal() +
+            pn.labs(x="Condition", y="Condensed Fraction")
+    )
+
+    plot.save(output_dir / "condensed_fraction.png", width=8, height=4.5, dpi=1200)
 
 
 def compute_over_multiple_dirs(parent_dir: str, parent_output_dir: str = "data", method: str = "OTSU",
